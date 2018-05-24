@@ -108,6 +108,7 @@ char* SocketUDP::ricevi(Address* mitt){
 	len_addr = sizeof(struct sockaddr_in);
 
 	/* Ricezione del messaggio */
+	
 	ret = recvfrom(sock_id,buffer,MAX_MSG,0,(struct sockaddr*)&mitt_addr,(socklen_t*)&len_addr);
 	
 	/* Return in caso il messaggio ricevuto sia vuoto */

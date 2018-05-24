@@ -1,109 +1,98 @@
-#include <string.h>     //per atoi
-#include <stdio.h>      //per la sprintf che scrive in una stringa
-#include <stdlib.h>     //per la funzione malloc,free
-#include <sys/socket.h> //per sin.family
-#include <arpa/inet.h>  //per sockaddr,inet_aton,
-#include <unistd.h>
+#ifndef ADDRESS_HPP
+#define ADDRESS_HPP
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 class Address{
-    private:
-     char* ip;
-     int port;
-    public:
-     //Costruttori
-      Address();
-      Address(char* ip,int port);
-      Address(struct sockaddr_in address);
-      Address(const Address &dolly);
+	private:
+		int port;
+		char* ip;
 
-     //Distruttore
-      ~Address();
-
-     //Metodi accessors
-      void set_ip(char* ip);
-      void set_port(int port);
-      char* get_ip();
-      int get_port();
-      struct sockaddr_in get_address();
-      void set_address(struct sockaddr_in address);
-
-      //Serializzatore
-      char* toString();
-      void show();
+	public:
+		//Costruttori
+		Address();			//Costruttore vuoto
+		Address(int, char*);		//Overload costruttore
+		Address(struct sockaddr_in);	//Overload costruttore
+		Address(const Address&); 	//metodo clonatore
+		~Address();			//metodo distruttore
+		//Altri metodi
+		void init(int, char*);	//This'll be called by every ^
+		char* to_string();
+		void show();
+		//Accessors
+		void set_address(struct sockaddr_in);
+		struct sockaddr_in get_address();
+		char* get_ip();
+		int get_port();
+		void set_ip(char*);
+		void set_port(int);
 };
 
-//Costruttori
+void	Address::show(){
+		printf("%s:%d\n", ip, port);
+}
+
+char*	Address::to_string(){
+		char s[22];
+		sprintf(s, "%s:%d", ip, port);
+		return strdup(s);
+}
+
+Address::Address(const Address& dolly){
+	ip = strdup(dolly.ip);
+	port = dolly.port;
+}
+
+void	Address::init(int p, char* i){
+		port = p;
+		ip = strdup(i);
+}
+
+Address::Address(struct sockaddr_in a){
+	free(ip);
+	port = ntohs(a.sin_port);
+	ip = strdup(inet_ntoa(a.sin_addr));
+}
 
 Address::Address(){
-  this->ip=strdup("0.0.0.0");
-  this->port=0;
+	init(0, strdup("0.0.0.0"));
 }
 
-Address::Address (char* ip, int port) {
-  this->ip=strdup(ip);
-  this->port=port;
+Address::Address(int p, char* i){
+	init(p, i);
 }
-
-Address::Address(struct sockaddr_in address){
-  this->ip = inet_ntoa(address.sin_addr);
-  this->port = ntohs(address.sin_port);
-}
-
-Address::Address(const Address &dolly){
-  this->ip = strdup(dolly.ip);
-  this->port = dolly.port;
-}
-
-//Distruttore
 
 Address::~Address(){
-  free(this->ip);
 }
 
-//Accessors
+char*	Address::get_ip(){return ip;}
 
-char* Address::get_ip(){
-  return strdup(this->ip); 
+int	Address::get_port(){return port;}
+
+void	Address::set_ip(char* i){
+		free(ip);
+		ip = i;
+}
+void	Address::set_port(int p){
+		port = p;
+}
+void 	Address::set_address(struct sockaddr_in address){
+	free(ip);
+	port = ntohs(address.sin_port);
+	ip = strdup(inet_ntoa(address.sin_addr));
+}
+struct sockaddr_in Address::get_address(){
+	struct sockaddr_in ret;
+	inet_aton(ip, &ret.sin_addr);
+	ret.sin_port = (htons(port));
+	ret.sin_family = AF_INET;
+	for(int i = 0; i < 8; i++){
+		ret.sin_zero[i] = 0;
+	}
+	return ret;
 }
 
-int Address::get_port(){
-  return this->port; 
-}
-
-struct sockaddr_in Address::get_address(){ 
-  struct sockaddr_in address;
-  address.sin_family = AF_INET;
-  inet_aton(this->ip,&address.sin_addr);
-  address.sin_port=htons(this->port);
-  for(int i = 0; i < 8 ; i++) address.sin_zero[i] = 0 ;
-  return address; 
-}
-
-void Address::set_ip(char* ip){
- free(this->ip);
- this->ip= strdup(ip);
-}
-
-void Address::set_port(int port){
-  this->port=port;
-}
-
-void Address::set_address(struct sockaddr_in address){
-  free(this->ip);
-  this->ip = strdup(inet_ntoa(address.sin_addr));
-  this->port = ntohs(address.sin_port); 
-}
-
-//Serializzatori
-
-void Address::show(){
-  printf("%s:%d",this->ip,this->port);
-}
-char* Address::toString(){
-  char str[22];
-  sprintf(str, "%s:%d",this->ip,this->port);
-  return strdup(str);
-}
-
-
-     
+#endif

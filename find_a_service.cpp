@@ -1,8 +1,5 @@
-#include <stdio.h>
-#include <sys/socket.h>
-#include <string.h>
-#include <arpa/inet.h>
 #include <sqlite3.h>
+#include "SocketUDP.hpp"
 
 #define REQUEST "FS0.1RQST["
 #define RESPONSE "FS0.1RSPN"
@@ -20,7 +17,7 @@ int callback(void* s, int count, char** data, char** columns) {
 int main(int argc, char* argv[]) {
 	int port;
 	int sock_id;
-	Address* sender;
+	Address sender;
 	
 	if(argc!=2) {
 		printf("USAGE:%s PORT",argv[0]);
@@ -28,25 +25,25 @@ int main(int argc, char* argv[]) {
 	}
 	
 	port = atoi(argv[1]);
-	SocketUDP myself(port);
-	
-	char* request = myself.ricevi(sender);
+	SocketUDP myself(port,false);
+
+	char* request = myself.ricevi(&sender);
 	if(strstr(request,REQUEST)==NULL) {
-		myself.invia(*sender,INVALID_REQUEST);
-		delete(sender);
+		myself.invia(INVALID_REQUEST,sender);
 		return -2;
 	}
-	
+
 	char* id_start = request + strlen(REQUEST);
 	char buffer[MAX_BUFFER];
+
 	int i;
 	for(i=0;id_start[i]!=']';i++) {
 		buffer[i] = id_start[i];
 	}
 	buffer[i] = '\0';
-	
+
 	sqlite3* sql_conn;
-	sqlite3_open(DBNAME,&sqlconn);
+	sqlite3_open(DBNAME,&sql_conn);
 	char query[MAX_BUFFER];
 	sprintf(query,"%s%s\"",QUERY,buffer);
 	
@@ -56,9 +53,7 @@ int main(int argc, char* argv[]) {
 	char response[MAX_BUFFER];
 	sprintf(response,"%s%s",RESPONSE,fetch);
 	
-	myself.invia[*sender,response];
-	
-	delete(sender);
+	myself.invia(response,sender);
 	
 	return 0;
 }
